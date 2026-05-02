@@ -44,19 +44,15 @@ https://link.oryondigital.com/admin
 A Vercel é **serverless** — o arquivo `data/links.json` funciona em desenvolvimento local,
 mas em produção na Vercel os arquivos escritos em runtime não persistem entre deploys.
 
-### Solução recomendada para produção:
-Use o **Vercel KV** (banco Redis gratuito da própria Vercel):
+### Produção: Supabase
 
-1. No painel da Vercel: **Storage → Create → KV**
-2. Instale: `npm install @vercel/kv`
-3. Substitua as leituras/escritas do JSON pela API do KV
+1. Crie a tabela `public.links` no SQL Editor do Supabase (colunas: `id`, `name`, `slug`, `dest`, `desc`, `created_at`).
+2. Na Vercel: **Settings → Environment Variables**:
+   - `SUPABASE_URL` — URL do projeto (ex.: `https://SEU_REF.supabase.co`, **sem** `/rest/v1`)
+   - `SUPABASE_SERVICE_ROLE_KEY` — chave **service_role** (só servidor; nunca no front nem no Git)
+3. Novo deploy.
 
-Exemplo:
-```js
-import { kv } from '@vercel/kv';
-const links = await kv.get('links') || [];
-await kv.set('links', links);
-```
+Localmente: copie `.env.example` para `.env.local` e preencha.
 
-Prefere que eu já faça essa versão com Vercel KV? É só pedir!
+A API e o redirect em `[slug].js` usam Supabase quando essas variáveis existem; caso contrário, usam `data/links.json`.
 # links
