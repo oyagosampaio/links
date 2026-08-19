@@ -1,5 +1,6 @@
 import { getSupabaseAdmin, rowToTenant } from '../../../lib/supabaseAdmin';
 import { requireAdmin } from '../../../lib/auth';
+import { sendAccessEmailSafe } from '../../../lib/email';
 
 const ACCESS_TYPES = ['subscription', 'courtesy', 'tester', 'manual'];
 const PLAN_STATUSES = ['active', 'inactive', 'trialing', 'canceled', 'past_due'];
@@ -144,6 +145,16 @@ export default async function handler(req, res) {
         periodEnd: periodEnd === undefined ? null : periodEnd,
         notes,
       });
+
+      const shouldEmail = req.body?.sendEmail !== false && ['active', 'trialing'].includes(planStatus);
+      if (shouldEmail) {
+        await sendAccessEmailSafe({
+          to: email,
+          name: tenant.name,
+          password: password || undefined,
+        });
+      }
+
       return res.status(201).json(rowToTenant(tenant));
     }
 
@@ -193,11 +204,20 @@ export default async function handler(req, res) {
 
       const { data, error } = await admin
         .from('tenants')
-        .update(patch)
+        .update(Object.keys(patch).length ? patch : { updated_at: new Date().toISOString() })
         .eq('id', id)
         .select('*')
         .single();
       if (error) throw error;
+
+      if (req.body?.sendAccessEmail || (req.body?.planStatus === 'active' && existing.plan_status !== 'active' && req.body?.sendEmail !== false)) {
+        await sendAccessEmailSafe({
+          to: data.email,
+          name: data.name,
+          password: req.body?.password ? String(req.body.password) : undefined,
+        });
+      }
+
       return res.status(200).json(rowToTenant(data));
     }
 

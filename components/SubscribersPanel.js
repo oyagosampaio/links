@@ -36,6 +36,7 @@ const emptyForm = {
   planStatus: 'active',
   currentPeriodEnd: '',
   notes: '',
+  sendEmail: true,
 };
 
 export default function SubscribersPanel({ showToast }) {
@@ -76,6 +77,7 @@ export default function SubscribersPanel({ showToast }) {
       planStatus: row.planStatus,
       currentPeriodEnd: row.currentPeriodEnd ? row.currentPeriodEnd.slice(0, 10) : '',
       notes: row.notes || '',
+      sendEmail: false,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -92,6 +94,8 @@ export default function SubscribersPanel({ showToast }) {
       planStatus: form.planStatus,
       currentPeriodEnd: form.currentPeriodEnd || null,
       notes: form.notes,
+      sendEmail: form.sendEmail,
+      sendAccessEmail: Boolean(editingId && form.sendEmail),
     };
     const res = await fetch('/api/admin/subscribers', {
       method: editingId ? 'PATCH' : 'POST',
@@ -103,7 +107,7 @@ export default function SubscribersPanel({ showToast }) {
     if (!res.ok) return showToast(body.error || 'Erro ao salvar acesso', 'error');
     resetForm();
     fetchRows();
-    showToast(editingId ? 'Acesso atualizado' : 'Acesso criado', 'success');
+    showToast(editingId ? 'Acesso atualizado' : (form.sendEmail ? 'Acesso criado e e-mail enviado' : 'Acesso criado'), 'success');
   }
 
   async function revoke(id) {
@@ -118,6 +122,16 @@ export default function SubscribersPanel({ showToast }) {
     showToast('Acesso revogado');
   }
 
+  async function sendAccess(row) {
+    const res = await fetch('/api/admin/subscribers', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: row.id, sendAccessEmail: true }),
+    });
+    if (!res.ok) return showToast('Erro ao enviar e-mail', 'error');
+    showToast('E-mail de acesso enviado', 'success');
+  }
+
   async function activate(row) {
     const res = await fetch('/api/admin/subscribers', {
       method: 'PATCH',
@@ -130,7 +144,7 @@ export default function SubscribersPanel({ showToast }) {
     });
     if (!res.ok) return showToast('Erro ao ativar', 'error');
     fetchRows();
-    showToast('Acesso ativado', 'success');
+    showToast('Acesso ativado e e-mail enviado', 'success');
   }
 
   const filtered = rows.filter((r) => {
@@ -201,6 +215,16 @@ export default function SubscribersPanel({ showToast }) {
             <input value={form.notes} onChange={(e) => setField('notes', e.target.value)} placeholder="Ex: parceiro, beta..." />
           </div>
         </div>
+        <div className="field" style={{ marginBottom: 18 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={form.sendEmail}
+              onChange={(e) => setField('sendEmail', e.target.checked)}
+            />
+            Enviar e-mail de acesso
+          </label>
+        </div>
         <div className="btn-row">
           <button className="btn-create" onClick={save} disabled={loading}>
             {loading ? 'Salvando...' : editingId ? 'Salvar acesso' : 'Criar acesso'}
@@ -245,6 +269,7 @@ export default function SubscribersPanel({ showToast }) {
                 <td>
                   <div className="actions">
                     <button className="btn edit" onClick={() => startEdit(row)}>Editar</button>
+                    <button className="btn copy" onClick={() => sendAccess(row)}>E-mail</button>
                     {row.planStatus === 'active' || row.planStatus === 'trialing' ? (
                       <button className="btn del" onClick={() => revoke(row.id)}>Revogar</button>
                     ) : (

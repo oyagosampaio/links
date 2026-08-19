@@ -65,6 +65,10 @@ Copie `.env.example` para `.env.local` (e as mesmas chaves na Vercel):
 | `STRIPE_PRICE_ID` | Preço mensal 9,90 |
 | `NEXT_PUBLIC_APP_URL` | `https://link.oryondigital.com` |
 | `NEXT_PUBLIC_APP_HOST` | `link.oryondigital.com` |
+| `RESEND_API_KEY` | API Key do Resend |
+| `RESEND_FROM` | Remetente verificado, ex. `Oryon Links <noreply@oryondigital.com>` |
+
+No Resend: verifique o domínio `oryondigital.com` e use um remetente desse domínio. Os e-mails de acesso (assinatura liberada / cortesia) e de “esqueci a senha” saem por aí.
 
 Nunca commite `service_role` nem chaves Stripe.
 

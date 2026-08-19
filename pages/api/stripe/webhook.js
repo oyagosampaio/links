@@ -1,6 +1,7 @@
 import { getStripe } from '../../../lib/stripe';
 import { getSupabaseAdmin } from '../../../lib/supabaseAdmin';
 import { mapStripeStatus, subscriptionPeriodEnd } from '../../../lib/access';
+import { sendAccessEmailSafe } from '../../../lib/email';
 
 export const config = {
   api: { bodyParser: false },
@@ -103,6 +104,10 @@ export default async function handler(req, res) {
         }
         await applySubscription(admin, tenant, subscription, {
           stripe_customer_id: stripeId(session.customer),
+        });
+        await sendAccessEmailSafe({
+          to: tenant.email,
+          name: tenant.name,
         });
         break;
       }

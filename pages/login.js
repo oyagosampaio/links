@@ -33,13 +33,19 @@ export default function Login() {
     setError('');
     setInfo('');
     if (!email) return setError('Informe seu e-mail para recuperar a senha');
-    const supabase = getSupabaseBrowser();
-    const origin = window.location.origin;
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/recuperar`,
+    setLoading(true);
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
     });
-    if (resetError) setError(resetError.message);
-    else setInfo('Se o e-mail existir, enviaremos o link de recuperação.');
+    setLoading(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error || 'Não foi possível enviar o e-mail agora');
+      return;
+    }
+    setInfo('Se o e-mail existir, enviaremos o link de recuperação.');
   }
 
   return (
@@ -58,8 +64,8 @@ export default function Login() {
           <label>Senha</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
-        <button className="ghost" type="button" onClick={forgotPassword} style={{ marginBottom: 8 }}>
-          Esqueci a senha
+        <button className="ghost" type="button" onClick={forgotPassword} style={{ marginBottom: 8 }} disabled={loading}>
+          {loading ? 'Enviando...' : 'Esqueci a senha'}
         </button>
         <button className="btn-primary" type="submit" disabled={loading}>
           {loading ? 'Entrando...' : 'Entrar'}
