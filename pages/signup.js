@@ -56,7 +56,7 @@ export default function Signup() {
       <Head><title>Criar conta — Oryon Links</title></Head>
       <form className="card auth-card" onSubmit={onSubmit}>
         <h1>Criar conta</h1>
-        <p className="subtitle">R$ 9,90/mês. O pagamento é feito com segurança no Stripe.</p>
+        <p className="subtitle">R$ 9,90/mês. Pagamento seguro e acesso liberado na hora.</p>
         {error && <div className="error-box">{error}</div>}
         <div className="field" style={{ marginBottom: 14 }}>
           <label>Nome</label>

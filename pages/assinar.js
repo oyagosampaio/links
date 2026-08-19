@@ -36,7 +36,7 @@ export default function Assinar({ canceled }) {
           <li>Edição e exclusão a qualquer momento</li>
         </ul>
         <button className="btn-primary" onClick={checkout} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
-          {loading ? 'Abrindo Stripe...' : 'Pagar com Stripe'}
+          {loading ? 'Abrindo pagamento...' : 'Assinar agora'}
         </button>
       </div>
     </div>

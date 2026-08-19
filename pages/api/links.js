@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   try {
     const admin = getSupabaseAdmin();
     if (!admin) {
-      return res.status(503).json({ error: 'Supabase não configurado' });
+      return res.status(503).json({ error: 'Serviço indisponível no momento' });
     }
 
     const ctx = await requireActiveAccess(req, res);

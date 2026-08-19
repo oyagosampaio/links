@@ -58,13 +58,13 @@ export default function Home({ loggedIn, hasAccess }) {
               <li>Slug único na plataforma — ninguém usa o seu</li>
               <li>Redirecionamento instantâneo para o destino</li>
               <li>Dados e configurações isolados por conta</li>
-              <li>Cancele quando quiser pelo portal Stripe</li>
+              <li>Cancele quando quiser, direto no painel</li>
             </ul>
-            <a className="btn-primary" href={ctaHref}>Assinar com Stripe</a>
+            <a className="btn-primary" href={ctaHref}>Assinar agora</a>
           </div>
           <div className="side-note">
             <h3>Como funciona</h3>
-            Crie sua conta, pague R$ 9,90 no Stripe e o acesso é liberado automaticamente.
+            Crie sua conta, assine por R$ 9,90 e o acesso é liberado na hora.
             Depois é só gerar links como <span className="mono" style={{ color: 'var(--accent)' }}>{host}/seu-slug</span> e
             apontar para WhatsApp, Instagram, site ou qualquer URL.
           </div>

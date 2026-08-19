@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   try {
     const stripe = getStripe();
     if (!stripe || !process.env.STRIPE_PRICE_ID) {
-      return res.status(503).json({ error: 'Stripe não configurado' });
+      return res.status(503).json({ error: 'Pagamento indisponível no momento' });
     }
 
     const ctx = await requireUser(req, res);
