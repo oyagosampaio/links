@@ -1,6 +1,8 @@
 import Head from 'next/head';
 import { getPageAuth, tenantHasAccess, publicTenant } from '../lib/auth';
 import { appHost } from '../lib/stripe';
+import BrandLogo from '../components/BrandLogo';
+import { BRAND } from '../lib/brand';
 
 export default function Home({ loggedIn, hasAccess }) {
   const host = appHost();
@@ -10,22 +12,12 @@ export default function Home({ loggedIn, hasAccess }) {
   return (
     <>
       <Head>
-        <title>Oryon Links — Gerencie seus links por R$ 9,90/mês</title>
-        <meta name="description" content="Crie slugs únicos, redirecione para qualquer destino e gerencie seus links em um painel isolado." />
+        <title>{BRAND.name} — Gerencie seus links por R$ 9,90/mês</title>
+        <meta name="description" content={BRAND.description} />
       </Head>
 
       <header className="landing-header">
-        <div className="logo">
-          <div className="logo-mark">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M2 8h12M8 2l6 6-6 6" stroke="#0d0d0d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <div>
-            <div className="logo-text">Oryon Links</div>
-            <div className="logo-sub">{host}</div>
-          </div>
-        </div>
+        <a href="/"><BrandLogo /></a>
         <div className="header-right">
           {loggedIn ? (
             <a className="ghost" href={hasAccess ? '/app' : '/assinar'}>{hasAccess ? 'Painel' : 'Assinar'}</a>

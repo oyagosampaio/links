@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import { getPageAuth, accessRedirect, publicTenant, tenantHasAccess } from '../lib/auth';
 import { getSupabaseBrowser } from '../lib/supabaseBrowser';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -55,6 +56,7 @@ export default function Signup() {
     <div className="auth-wrap">
       <Head><title>Criar conta — Oryon Links</title></Head>
       <form className="card auth-card" onSubmit={onSubmit}>
+        <div className="auth-logo"><BrandLogo /></div>
         <h1>Criar conta</h1>
         <p className="subtitle">R$ 9,90/mês. Pagamento seguro e acesso liberado na hora.</p>
         {error && <div className="error-box">{error}</div>}

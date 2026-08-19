@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { getSupabaseBrowser } from '../lib/supabaseBrowser';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Recuperar() {
   const [password, setPassword] = useState('');
@@ -68,6 +69,7 @@ export default function Recuperar() {
     <div className="auth-wrap">
       <Head><title>Nova senha — Oryon Links</title></Head>
       <form className="card auth-card" onSubmit={onSubmit}>
+        <div className="auth-logo"><BrandLogo /></div>
         <h1>Nova senha</h1>
         <p className="subtitle">Defina uma senha para acessar o painel.</p>
         {error && <div className="error-box">{error}</div>}

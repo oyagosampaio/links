@@ -1,22 +1,6 @@
 import { useState } from 'react';
 import { getSupabaseBrowser } from '../lib/supabaseBrowser';
-import { appHost } from '../lib/stripe';
-
-function Logo() {
-  return (
-    <div className="logo">
-      <div className="logo-mark">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M2 8h12M8 2l6 6-6 6" stroke="#0d0d0d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </div>
-      <div>
-        <div className="logo-text">Oryon Links</div>
-        <div className="logo-sub">{appHost()}</div>
-      </div>
-    </div>
-  );
-}
+import BrandLogo from './BrandLogo';
 
 export default function AppHeader({ tenant, current, linkCount }) {
   async function logout() {
@@ -29,7 +13,7 @@ export default function AppHeader({ tenant, current, linkCount }) {
 
   return (
     <header className="app-header">
-      <a href={isAdmin ? '/admin' : '/app'}><Logo /></a>
+      <a href={isAdmin ? '/admin' : '/app'}><BrandLogo /></a>
       <div className="header-right">
         {isAdmin && (
           <nav className="nav-tabs">

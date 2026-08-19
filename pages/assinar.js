@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import { getPageAuth, loginRedirect, accessRedirect, publicTenant, tenantHasAccess } from '../lib/auth';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Assinar({ canceled }) {
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,7 @@ export default function Assinar({ canceled }) {
   return (
     <div className="paywall">
       <Head><title>Assinar — Oryon Links</title></Head>
+      <div className="auth-logo" style={{ justifyContent: 'center', marginBottom: 16 }}><BrandLogo /></div>
       <h1>Libere seu painel</h1>
       <p className="subtitle">Assinatura mensal de R$ 9,90. Acesso único por conta, dados isolados.</p>
       <div className="card">

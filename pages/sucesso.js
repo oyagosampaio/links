@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { getPageAuth, loginRedirect, publicTenant } from '../lib/auth';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Sucesso() {
   const [msg, setMsg] = useState('Confirmando pagamento...');
@@ -27,6 +28,7 @@ export default function Sucesso() {
   return (
     <div className="paywall">
       <Head><title>Pagamento confirmado — Oryon Links</title></Head>
+      <div className="auth-logo" style={{ justifyContent: 'center', marginBottom: 16 }}><BrandLogo /></div>
       <h1>Quase lá</h1>
       <p className="subtitle">{msg}</p>
     </div>

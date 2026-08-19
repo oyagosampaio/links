@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import { getPageAuth, accessRedirect, publicTenant } from '../lib/auth';
 import { getSupabaseBrowser } from '../lib/supabaseBrowser';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -52,6 +53,7 @@ export default function Login() {
     <div className="auth-wrap">
       <Head><title>Entrar — Oryon Links</title></Head>
       <form className="card auth-card" onSubmit={onSubmit}>
+        <div className="auth-logo"><BrandLogo /></div>
         <h1>Entrar</h1>
         <p className="subtitle">Acesse seu painel de links</p>
         {error && <div className="error-box">{error}</div>}
