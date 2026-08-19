@@ -1,92 +1,131 @@
-import fs from 'fs';
-import path from 'path';
 import { getSupabaseAdmin, rowToLink } from '../../lib/supabaseAdmin';
+import { requireActiveAccess } from '../../lib/auth';
+import { normalizeSlug, slugError } from '../../lib/reservedSlugs';
 
-const filePath = path.join(process.cwd(), 'data', 'links.json');
+const LINK_COLUMNS = 'id,tenant_id,name,slug,dest,desc,created_at,updated_at';
 
-async function readLinksFromFile() {
-  try {
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    return [];
+function validateDest(dest) {
+  if (!dest || !/^https?:\/\//i.test(dest)) {
+    return 'Destino deve começar com http:// ou https://';
   }
+  return null;
 }
 
-async function readLinks() {
-  const supabase = getSupabaseAdmin();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('links')
-      .select('id,name,slug,dest,desc,created_at')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(rowToLink);
-  }
-  return readLinksFromFile();
-}
-
-async function writeLinksFile(links) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(links, null, 2), 'utf-8');
+async function slugTaken(admin, slug, excludeId) {
+  let query = admin.from('links').select('id').eq('slug', slug);
+  if (excludeId) query = query.neq('id', Number(excludeId));
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
 }
 
 export default async function handler(req, res) {
   try {
-    const supabase = getSupabaseAdmin();
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({ error: 'Supabase não configurado' });
+    }
+
+    const ctx = await requireActiveAccess(req, res);
+    if (!ctx) return;
 
     if (req.method === 'GET') {
-      return res.status(200).json(await readLinks());
+      const { data, error } = await admin
+        .from('links')
+        .select(LINK_COLUMNS)
+        .eq('tenant_id', ctx.tenant.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return res.status(200).json((data || []).map(rowToLink));
     }
 
     if (req.method === 'POST') {
-      const { name, slug, dest, desc } = req.body;
+      const name = String(req.body?.name || '').trim();
+      const dest = String(req.body?.dest || '').trim();
+      const desc = String(req.body?.desc || '').trim();
+      const slug = normalizeSlug(req.body?.slug);
+
       if (!name || !slug || !dest) {
         return res.status(400).json({ error: 'name, slug e dest são obrigatórios' });
       }
+      const sErr = slugError(slug);
+      if (sErr) return res.status(400).json({ error: sErr });
+      const dErr = validateDest(dest);
+      if (dErr) return res.status(400).json({ error: dErr });
+      if (await slugTaken(admin, slug)) {
+        return res.status(409).json({ error: 'Este slug já está em uso na plataforma' });
+      }
 
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('links')
-          .insert({ name, slug, dest, desc: desc || '' })
-          .select('id,name,slug,dest,desc,created_at')
-          .single();
-        if (error) {
-          if (error.code === '23505') {
-            return res.status(409).json({ error: 'Slug já existe' });
-          }
-          throw error;
+      const { data, error } = await admin
+        .from('links')
+        .insert({
+          tenant_id: ctx.tenant.id,
+          name,
+          slug,
+          dest,
+          desc,
+        })
+        .select(LINK_COLUMNS)
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          return res.status(409).json({ error: 'Este slug já está em uso na plataforma' });
         }
-        return res.status(201).json(rowToLink(data));
+        throw error;
+      }
+      return res.status(201).json(rowToLink(data));
+    }
+
+    if (req.method === 'PUT') {
+      const id = Number(req.body?.id);
+      const name = String(req.body?.name || '').trim();
+      const dest = String(req.body?.dest || '').trim();
+      const desc = String(req.body?.desc || '').trim();
+      const slug = normalizeSlug(req.body?.slug);
+
+      if (!id || !name || !slug || !dest) {
+        return res.status(400).json({ error: 'id, name, slug e dest são obrigatórios' });
+      }
+      const sErr = slugError(slug);
+      if (sErr) return res.status(400).json({ error: sErr });
+      const dErr = validateDest(dest);
+      if (dErr) return res.status(400).json({ error: dErr });
+      if (await slugTaken(admin, slug, id)) {
+        return res.status(409).json({ error: 'Este slug já está em uso na plataforma' });
       }
 
-      const links = await readLinksFromFile();
-      if (links.find(l => l.slug === slug)) {
-        return res.status(409).json({ error: 'Slug já existe' });
+      const { data, error } = await admin
+        .from('links')
+        .update({ name, slug, dest, desc })
+        .eq('id', id)
+        .eq('tenant_id', ctx.tenant.id)
+        .select(LINK_COLUMNS)
+        .maybeSingle();
+
+      if (error) {
+        if (error.code === '23505') {
+          return res.status(409).json({ error: 'Este slug já está em uso na plataforma' });
+        }
+        throw error;
       }
-      const newLink = {
-        id: Date.now(),
-        name,
-        slug,
-        dest,
-        desc: desc || '',
-        createdAt: new Date().toISOString(),
-      };
-      links.unshift(newLink);
-      await writeLinksFile(links);
-      return res.status(201).json(newLink);
+      if (!data) return res.status(404).json({ error: 'Link não encontrado' });
+      return res.status(200).json(rowToLink(data));
     }
 
     if (req.method === 'DELETE') {
-      const { id } = req.body;
-      if (supabase) {
-        const { error } = await supabase.from('links').delete().eq('id', Number(id));
-        if (error) throw error;
-        return res.status(200).json({ ok: true });
-      }
-      let links = await readLinksFromFile();
-      links = links.filter(l => l.id !== Number(id));
-      await writeLinksFile(links);
+      const id = Number(req.body?.id);
+      if (!id) return res.status(400).json({ error: 'id é obrigatório' });
+
+      const { data, error } = await admin
+        .from('links')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', ctx.tenant.id)
+        .select('id')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return res.status(404).json({ error: 'Link não encontrado' });
       return res.status(200).json({ ok: true });
     }
 

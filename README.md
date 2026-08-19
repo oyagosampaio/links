@@ -1,58 +1,86 @@
-# Oryon Links — Gerenciador de Links
+# Oryon Links — SaaS multi-tenant
 
-## Deploy na Vercel
+Gerenciador de links com contas isoladas, Stripe (R$ 9,90/mês) e painel de administrador.
 
-### 1. Instale a Vercel CLI
-```bash
-npm i -g vercel
+## O que mudou
+
+- **Assinantes** entram em `/app` depois de pagar (ou receberem acesso manual).
+- **Admin (você)** entra em `/admin`: cria links e gerencia assinantes/cortesias.
+- Cada conta só vê e edita os próprios links.
+- **Slug único na plataforma inteira** — ninguém pode repetir um slug, nem o mesmo usuário.
+
+## 1. Supabase
+
+1. Rode `supabase/schema.sql` no SQL Editor.
+2. Em **Authentication → Providers → Email**, você pode desligar “Confirm email” (o cadastro já confirma o usuário pelo servidor).
+3. Crie a conta admin (cadastro no site com o mesmo e-mail de `ADMIN_EMAIL`) **ou** rode:
+
+```sql
+update public.tenants
+set role = 'admin', plan_status = 'active', access_type = 'manual'
+where lower(email) = lower('seu-email@dominio.com');
 ```
 
-### 2. Faça login
-```bash
-vercel login
+4. Se ainda existirem links antigos sem `tenant_id`:
+
+```sql
+update public.links
+set tenant_id = (select id from public.tenants where role = 'admin' limit 1)
+where tenant_id is null;
 ```
 
-### 3. Deploy
+## 2. Stripe
+
+1. Crie um produto recorrente **mensal** de **BRL 9,90**.
+2. Copie o `price_...` para `STRIPE_PRICE_ID`.
+3. Webhook apontando para `https://SEU_DOMINIO/api/stripe/webhook` com os eventos:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.paid`
+   - `invoice.payment_failed`
+4. Em **Billing → Customer portal**, ative o portal (cancelamento / cartão).
+
+Localmente:
+
 ```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+Use o `whsec_...` gerado em `STRIPE_WEBHOOK_SECRET`.
+
+## 3. Variáveis de ambiente
+
+Copie `.env.example` para `.env.local` (e as mesmas chaves na Vercel):
+
+| Variável | Onde pegar |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `anon` `public` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `service_role` (só servidor) |
+| `ADMIN_EMAIL` | Seu e-mail de dono |
+| `STRIPE_SECRET_KEY` | Chave secreta Stripe |
+| `STRIPE_WEBHOOK_SECRET` | Segredo do webhook |
+| `STRIPE_PRICE_ID` | Preço mensal 9,90 |
+| `NEXT_PUBLIC_APP_URL` | `https://link.oryondigital.com` |
+| `NEXT_PUBLIC_APP_HOST` | `link.oryondigital.com` |
+
+Nunca commite `service_role` nem chaves Stripe.
+
+## 4. Deploy na Vercel
+
+```bash
+npm i
 vercel --prod
 ```
 
-### 4. Configure o domínio
-No painel da Vercel:
-- Vá em **Settings → Domains**
-- Adicione `link.oryondigital.com`
-- Aponte o DNS do seu domínio para a Vercel (eles vão te dar as instruções)
+Domínio: **Settings → Domains** → `link.oryondigital.com`.
 
-### 5. Acesse o painel
-```
-https://link.oryondigital.com/admin
-```
+## Fluxos
 
----
+- Visitante → `/signup` → Stripe Checkout → webhook libera `/app`
+- Você → `/admin` → aba **Links** (seus links) e **Assinantes** (lista + cortesias/testers/manuais)
+- Público → `https://link.oryondigital.com/slug` redireciona ao destino
 
-## Como usar
-
-1. Acesse `/admin`
-2. Preencha nome, slug e destino
-3. Clique em **Criar Link**
-4. Compartilhe `link.oryondigital.com/seu-slug`
-
----
-
-## ⚠️ Atenção sobre o JSON
-
-A Vercel é **serverless** — o arquivo `data/links.json` funciona em desenvolvimento local,
-mas em produção na Vercel os arquivos escritos em runtime não persistem entre deploys.
-
-### Produção: Supabase
-
-1. Crie a tabela `public.links` no SQL Editor do Supabase (colunas: `id`, `name`, `slug`, `dest`, `desc`, `created_at`).
-2. Na Vercel: **Settings → Environment Variables**:
-   - `SUPABASE_URL` — URL do projeto (ex.: `https://SEU_REF.supabase.co`, **sem** `/rest/v1`)
-   - `SUPABASE_SERVICE_ROLE_KEY` — chave **service_role** (só servidor; nunca no front nem no Git)
-3. Novo deploy.
-
-Localmente: copie `.env.example` para `.env.local` e preencha.
-
-A API e o redirect em `[slug].js` usam Supabase quando essas variáveis existem; caso contrário, usam `data/links.json`.
-# links
+Acesso manual no admin: informe e-mail, senha inicial (se for conta nova), tipo (cortesia, tester, assinante, manual) e validade opcional.
